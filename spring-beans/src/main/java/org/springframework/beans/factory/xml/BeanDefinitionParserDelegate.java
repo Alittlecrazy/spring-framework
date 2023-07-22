@@ -412,31 +412,31 @@ public class BeanDefinitionParserDelegate {
 	 */
 	@Nullable
 	public BeanDefinitionHolder parseBeanDefinitionElement(Element ele, @Nullable BeanDefinition containingBean) {
-		String id = ele.getAttribute(ID_ATTRIBUTE);
-		String nameAttr = ele.getAttribute(NAME_ATTRIBUTE);
+		String id = ele.getAttribute(ID_ATTRIBUTE);//获取id属性值
+		String nameAttr = ele.getAttribute(NAME_ATTRIBUTE);//获取name属性值
 
-		List<String> aliases = new ArrayList<>();
+		List<String> aliases = new ArrayList<>();//name属性值会有多个 会以,;分隔 所以将name属性值换为List存储
 		if (StringUtils.hasLength(nameAttr)) {
 			String[] nameArr = StringUtils.tokenizeToStringArray(nameAttr, MULTI_VALUE_ATTRIBUTE_DELIMITERS);
 			aliases.addAll(Arrays.asList(nameArr));
 		}
 
 		String beanName = id;
-		if (!StringUtils.hasText(beanName) && !aliases.isEmpty()) {
-			beanName = aliases.remove(0);
+		if (!StringUtils.hasText(beanName) && !aliases.isEmpty()) {//这里的意思就是没有配置id属性
+			beanName = aliases.remove(0);//将name属性的第一个值移除 当作beanName
 			if (logger.isTraceEnabled()) {
 				logger.trace("No XML 'id' specified - using '" + beanName +
 						"' as bean name and " + aliases + " as aliases");
 			}
 		}
 
-		if (containingBean == null) {
-			checkNameUniqueness(beanName, aliases, ele);
+		if (containingBean == null) {//这里为方法的传参 传入的值就是null  所以一定会执行
+			checkNameUniqueness(beanName, aliases, ele);//检查beanname是否重复
 		}
-
+		//这一行就是将所有的标签属性加载为beanDefinition
 		AbstractBeanDefinition beanDefinition = parseBeanDefinitionElement(ele, beanName, containingBean);
 		if (beanDefinition != null) {
-			if (!StringUtils.hasText(beanName)) {
+			if (!StringUtils.hasText(beanName)) {//如果beanName还是空值 相当于id和name属性都没有配置 自动生成一个
 				try {
 					if (containingBean != null) {
 						beanName = BeanDefinitionReaderUtils.generateBeanName(
@@ -503,17 +503,18 @@ public class BeanDefinitionParserDelegate {
 		this.parseState.push(new BeanEntry(beanName));
 
 		String className = null;
-		if (ele.hasAttribute(CLASS_ATTRIBUTE)) {
+		if (ele.hasAttribute(CLASS_ATTRIBUTE)) {//class属性
 			className = ele.getAttribute(CLASS_ATTRIBUTE).trim();
 		}
 		String parent = null;
-		if (ele.hasAttribute(PARENT_ATTRIBUTE)) {
+		if (ele.hasAttribute(PARENT_ATTRIBUTE)) {//parent属性
 			parent = ele.getAttribute(PARENT_ATTRIBUTE);
 		}
 
 		try {
+			//创建GenericBeanDefinition
 			AbstractBeanDefinition bd = createBeanDefinition(className, parent);
-
+			//解析其余的属性
 			parseBeanDefinitionAttributes(ele, beanName, containingBean, bd);
 			bd.setDescription(DomUtils.getChildElementValueByTagName(ele, DESCRIPTION_ELEMENT));
 

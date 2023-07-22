@@ -302,6 +302,7 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	 */
 	@Override
 	public int loadBeanDefinitions(Resource resource) throws BeanDefinitionStoreException {
+		//这里的EncodedResource没什么用
 		return loadBeanDefinitions(new EncodedResource(resource));
 	}
 
@@ -328,12 +329,15 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 					"Detected cyclic loading of " + encodedResource + " - check your import definitions!");
 		}
 		try {
+			//获取输入流
 			InputStream inputStream = encodedResource.getResource().getInputStream();
 			try {
+				//InputSource为加载xml文件的类 org.xml.sax包下的
 				InputSource inputSource = new InputSource(inputStream);
 				if (encodedResource.getEncoding() != null) {
 					inputSource.setEncoding(encodedResource.getEncoding());
 				}
+				//开始加载BeanDefinition 传入的参数1.inputSource加载xml的类 2.encodedResource.getResource() xml配置
 				return doLoadBeanDefinitions(inputSource, encodedResource.getResource());
 			}
 			finally {
@@ -390,7 +394,9 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 			throws BeanDefinitionStoreException {
 
 		try {
+			//xml文件加载 成为Document对象
 			Document doc = doLoadDocument(inputSource, resource);
+			//注册BeanDefinition
 			int count = registerBeanDefinitions(doc, resource);
 			if (logger.isDebugEnabled()) {
 				logger.debug("Loaded " + count + " bean definitions from " + resource);
