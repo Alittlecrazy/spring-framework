@@ -239,15 +239,38 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	protected <T> T doGetBean(
 			String name, @Nullable Class<T> requiredType, @Nullable Object[] args, boolean typeCheckOnly)
 			throws BeansException {
+		//大多数情况下 beanName=name
+		//如果工厂调用的时候
+		//beanFactory.getBean("&s") -----> beanName=s name=&s
+		// 注意：FactoryBean ---> &id ----> 获取的就是FactoryBean类型的实例
 
-		String beanName = transformedBeanName(name);
+		// <bean id="user" name="u"  class="xxxx" />
+		// beanFactory.getBean("u") ----> beanName=user name=u
+		String beanName = transformedBeanName(name);//相当于获取id值
 		Object bean;
 
 		// Eagerly check singleton cache for manually registered singletons.
-		Object sharedInstance = getSingleton(beanName);
+		/**
+		 * Object sharedInstance = getSingleton(beanName);
+		 * 两种情况
+		 * 1.第一次从Spring获取 得到的是null值
+		 * 2.后续再获取就会有值
+		 * 所以后面就有if-else判断 对两种情况分别进行处理
+		 *
+		 * 从哪里获取缓存对象？
+		 * DefaultSingletonBeanRegistry  目的是为了解决循环引用的问题
+		 * 		singletonObjects       一级缓存
+		 * 		earlySingletonObjects  二级缓存
+		 * 		singletonFactories     三级缓存
+		 *
+		 * 	Spring创建的对象有两种状态
+		 * 	1.完全状态   对象创建 属性填充 初始化 （代理 AOP）
+		 *  2.正在创建中 仅仅有一个简单对象
+		 */
+		Object sharedInstance = getSingleton(beanName);//获取Spring曾经创建过的对象
 		if (sharedInstance != null && args == null) {
 			if (logger.isTraceEnabled()) {
-				if (isSingletonCurrentlyInCreation(beanName)) {
+				if (isSingletonCurrentlyInCreation(beanName)) {//是否是正在创建中的bean
 					logger.trace("Returning eagerly cached instance of singleton bean '" + beanName +
 							"' that is not fully initialized yet - a consequence of a circular reference");
 				}
@@ -255,17 +278,22 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					logger.trace("Returning cached instance of singleton bean '" + beanName + "'");
 				}
 			}
+			//如果是简单对象 直接返回 bean=sharedInstance
+			//如果是FactoryBean对象 返回FactoryBean.getObject();
 			bean = getObjectForBeanInstance(sharedInstance, name, beanName, null);
 		}
 
 		else {
 			// Fail if we're already creating this bean instance:
 			// We're assumably within a circular reference.
-			if (isPrototypeCurrentlyInCreation(beanName)) {
+			if (isPrototypeCurrentlyInCreation(beanName)) {//校验代码
 				throw new BeanCurrentlyInCreationException(beanName);
 			}
 
 			// Check if bean definition exists in this factory.
+			//解决父子容器的问题
+			//获取父容器 如果有父容器且这个配置在子容器中没有
+			//那么实例化父容器对应的bean（递归）
 			BeanFactory parentBeanFactory = getParentBeanFactory();
 			if (parentBeanFactory != null && !containsBeanDefinition(beanName)) {
 				// Not found -> check parent.
@@ -286,14 +314,30 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					return (T) parentBeanFactory.getBean(nameToLookup);
 				}
 			}
-
+			/**
+			 * typeCheckOnly 标志    默认是false
+			 * 举例：
+			 * 	beanFactory.getBean("u",User.class)
+			 * 	typeCheckOnly = true
+			 * 	spring是不会创建User对象 判断当前工厂获得或者创建的对象类型是不是User类型
+			 * 	typeCheckOnly = false
+			 * 	spring会创建对象 或者 获得这个对象 返回给调用者
+			 *
+			 */
 			if (!typeCheckOnly) {
-				markBeanAsCreated(beanName);
+				markBeanAsCreated(beanName);//标记这个bean是需要创建对象而不是类型检查
+				//1. 标记这个bean被创建
+				//2. clearMergedBeanDefinition(beanName);
 			}
 
 			try {
-				RootBeanDefinition mbd = getMergedLocalBeanDefinition(beanName);
-				checkMergedBeanDefinition(mbd, beanName, args);
+				/**
+				 * <bean id="p" abstract=true"/>
+				 * <bean id="u" class="xxx.xxx" parent="p"/>
+				 * 进行汇总 汇总成了 RootBeanDefinition
+				 */
+				RootBeanDefinition mbd = getMergedLocalBeanDefinition(beanName);//合并父子bean
+				checkMergedBeanDefinition(mbd, beanName, args);//安全性的校验 放置工厂都是抽象bean
 
 				// Guarantee initialization of beans that the current bean depends on.
 				String[] dependsOn = mbd.getDependsOn();

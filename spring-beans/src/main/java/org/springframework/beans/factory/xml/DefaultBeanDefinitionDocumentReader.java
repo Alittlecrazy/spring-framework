@@ -310,7 +310,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 		//BeanDefinitionHolder包含BeanDefinition对象
 		BeanDefinitionHolder bdHolder = delegate.parseBeanDefinitionElement(ele);
 		if (bdHolder != null) {
-			bdHolder = delegate.decorateBeanDefinitionIfRequired(ele, bdHolder);//解析一些特殊的标签 可以不看
+			bdHolder = delegate.decorateBeanDefinitionIfRequired(ele, bdHolder);//解析bean标签内部的自定义标签
 			try {
 				// Register the final decorated instance.
 				BeanDefinitionReaderUtils.registerBeanDefinition(bdHolder, getReaderContext().getRegistry());
