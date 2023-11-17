@@ -1380,15 +1380,19 @@ public class BeanDefinitionParserDelegate {
 	 */
 	@Nullable
 	public BeanDefinition parseCustomElement(Element ele, @Nullable BeanDefinition containingBd) {
+		//获取uri  http://www.springframework.org/schema/mvc
 		String namespaceUri = getNamespaceURI(ele);
 		if (namespaceUri == null) {
 			return null;
 		}
+		// uri 和 handler 对应关系
 		NamespaceHandler handler = this.readerContext.getNamespaceHandlerResolver().resolve(namespaceUri);
 		if (handler == null) {
 			error("Unable to locate Spring NamespaceHandler for XML schema namespace [" + namespaceUri + "]", ele);
 			return null;
 		}
+		//获得 对一个标签的 parse 操作
+		//解析 自定义标签 ---> 进行BeanDefinition注册
 		return handler.parse(ele, new ParserContext(this.readerContext, this, containingBd));
 	}
 
